@@ -1,0 +1,32 @@
+ports:
+  traefik:
+    port: 9000
+    hostPort: 9000
+    expose: true
+    exposedPort: 9000
+    protocol: TCP
+
+  web:
+    port: 8000
+    hostPort: 80
+    expose: true
+    exposedPort: 80
+    protocol: TCP
+
+  websecure:
+    port: 8443
+    hostPort: 443
+    expose: true
+    exposedPort: 443
+    protocol: TCP
+
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: ingress-ready
+              operator: In
+              values:
+                - "true"
