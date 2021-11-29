@@ -142,12 +142,12 @@ kubectl exec postgresdb-postgresql-0 --stdin --tty -- sh -c 'PGPASSWORD=pgpass12
 
 - Should show something like this:
 
-```bash
-Role name                    |                         Attributes                         | Member of
--------------------------------------------------+------------------------------------------------------------+-----------
-postgres                                        | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
-v-root-sql-role-YzMyiiWv2HyM7ipGxLQ8-1637849790 | Password valid until 2021-11-25 15:16:35+00                | {}
-```
+>```
+>Role name                                       |  Attributes                                                | Member of
+>-------------------------------------------------+------------------------------------------------------------+-----------
+>postgres                                        | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+>v-root-sql-role-YzMyiiWv2HyM7ipGxLQ8-1637849790 | Password valid until 2021-11-25 15:16:35+00                | {}
+>```
 
 ### Authentication - Configuring Kubernetes Authentication in Vault
 
@@ -187,20 +187,46 @@ sh -c ' \
 kubectl -n default exec vault-0 -c vault -- \
 sh -c ' \
     vault write auth/kubernetes/role/sql-role \
-        bound_service_account_names=safe-postgres \
+        bound_service_account_names=postgres-vault \
         bound_service_account_namespaces=default \
         policies=postgres-app-policy \
         ttl=1h'
 ```
 
-- From now, we can Inject secrets in to kubernetes pods, First, you need to match the name of a Kubernetes Service Account to the name of the role you configured in the previous step.
+- From now, we can Inject secrets in to kubernetes pods, first, you need to match the name of a Kubernetes 
+Service Account to the name of the role you configured in the previous step.
 
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: safe-postgres
-automountServiceAccountToken: true
+```bash
+kubectl create sa postgres-vault
 ```
 
-- Sample application will be available sooner
+### Using Vault CSI Provider
+
+
+- Helm chart and Install
+
+```bash
+helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+helm install csi secrets-store-csi-driver/secrets-store-csi-driver --set syncSecret.enabled=true
+```
+
+- Add Secret Provider Class
+
+```bash
+kubectl apply -f secret-provider-class.yaml
+```
+
+- Deploy sample app
+
+```bash
+kubectl apply -f sample-csi-usage.yaml
+```
+
+- Check if is there an env called DB_USERNAME
+```bash
+export APP_POD=$(kubectl get pod -l app=app -o jsonpath="{.items[*].metadata.name}")
+```
+
+```bash
+kubectl exec $APP_POD -- sh -c 'echo $DB_USERNAME'
+```
