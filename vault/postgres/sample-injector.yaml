@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-status: "update"
+        vault.hashicorp.com/role: "sql-role"
+        vault.hashicorp.com/secret-volume-path: "/app/app/secrets/"
+        vault.hashicorp.com/agent-inject-secret-.envapp: "database/creds/sql-role"
+        vault.hashicorp.com/agent-inject-template-.envapp: |
+          {{- with secret "database/creds/sql-role" -}}
+          DB_USER={{ .Data.username }}
+          DB_PASSWORD={{ .Data.password }}
+          {{- end -}}
+    spec:
+      serviceAccountName: postgres-vault
+      containers:
+        - name: app-vault
+          imagePullPolicy: IfNotPresent
+          image: vault-app:latest
+          workingDir: /app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: app
+  type: NodePort
+  ports:
+    - port: 8000
+      name: app
+      protocol: TCP
+      targetPort: 8000

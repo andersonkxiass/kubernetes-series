@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      serviceAccountName: minio-vault
+      containers:
+        - name: app
+          image: jweissig/app:0.0.1
+          env:
+            - name: ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: accessKeyId
+            - name: SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: secretAccessKey
+          volumeMounts:
+            - name: 'minio-keys'
+              mountPath: '/mnt/secrets-store'
+              readOnly: true
+      volumes:
+        - name: minio-keys
+          csi:
+            driver: 'secrets-store.csi.k8s.io'
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: 'minio-keys'
