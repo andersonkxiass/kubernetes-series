@@ -1,6 +1,12 @@
 #!/bin/bash
 
-kubectl -n hashcorp cp vault/vault-plugin-secrets-minio vault-0:/home/vault/vault-plugin-secrets-minio
+helm repo add minio https://charts.min.io/
+
+helm install -n minio minio minio/minio --values minio/values.yaml
+
+kubectl -n minio rollout status deployment/minio
+
+kubectl -n hashcorp cp minio/vault-plugin-secrets-minio vault-0:/home/vault/vault-plugin-secrets-minio
 
 kubectl exec -n hashcorp vault-0 -c vault -- \
   sh -c " \
@@ -20,7 +26,7 @@ vault secrets enable \
 kubectl exec -n hashcorp vault-0 -c vault -- \
   sh -c ' \
 vault write minio/config \
-  endpoint="minio-service.veraciti.svc.cluster.local:9000" \
+  endpoint="minio.minio.svc.cluster.local:9000" \
   accessKeyId="minio" \
   secretAccessKey="minio123" \
   useSSL=false
@@ -35,10 +41,7 @@ vault write minio/roles/minio-role \
     user_name_prefix=test_
   '
 
-kubectl exec -n hashcorp vault-0 -- vault read minio/keys/minio-role
-
 kubectl -n hashcorp cp ./minio/minio-policy.hcl vault-0:/home/vault/minio-policy.hcl
-
 
 kubectl -n hashcorp exec vault-0 -c vault -- \
   sh -c ' \
@@ -47,9 +50,13 @@ kubectl -n hashcorp exec vault-0 -c vault -- \
 kubectl -n hashcorp exec vault-0 -c vault -- \
   sh -c ' \
     vault write auth/kubernetes/role/minio-role \
-        bound_service_account_names=minio-vault \
+        bound_service_account_names=vault-sample \
         bound_service_account_namespaces="*" \
         policies=minio-policy \
         ttl=1h'
 
-kubectl create sa minio-vault
+
+kubectl create sa vault-sample
+
+
+kubectl exec -n hashcorp vault-0 -- vault read minio/keys/minio-role

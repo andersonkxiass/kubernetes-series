@@ -1,0 +1,19 @@
+rootUser: "minio"
+rootPassword: "minio123"
+
+resources:
+  requests:
+    memory: 2Gi
+
+mode: standalone
+
+replicas: 1
+
+persistence:
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+
+serviceAccount:
+  create: true
+  name: "vault-sample"

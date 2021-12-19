@@ -14,7 +14,7 @@ spec:
       labels:
         app: app
     spec:
-      serviceAccountName: minio-vault
+      serviceAccountName: vault-sample
       containers:
         - name: app
           image: jweissig/app:0.0.1
