@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: "50%"
+  template:
+    metadata:
+      labels:
+        app: app
+      annotations:
+        secret.reloader.stakater.com/reload: "minio-secrets,db-secrets"
+    spec:
+      serviceAccountName: vault-sample
+      containers:
+        - name: app
+          image: ghcr.io/andersonkxiass/simple-fastapi:development
+          imagePullPolicy: IfNotPresent
+          workingDir: /app
+          env:
+            - name: MINIO_URI
+              value: "http://minio.minio.svc.cluster.local:9000"
+            - name: ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: accessKeyId
+            - name: SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: secretAccessKey
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: password
+            - name: SQLALCHEMY_DATABASE_URI
+              value: "postgresql://$(DB_USERNAME):$(DB_PASSWORD)@postgresdb-postgresql.postgres.svc.cluster.local:5432/sample_database"
+          volumeMounts:
+            - name: 'minio-keys'
+              mountPath: '/mnt/secrets-minio-store'
+              readOnly: true
+            - name: 'vault-db-creds'
+              mountPath: '/mnt/secrets-pg-store'
+              readOnly: true
+      volumes:
+        - name: minio-keys
+          csi:
+            driver: 'secrets-store.csi.k8s.io'
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: 'minio-keys'
+        - name: vault-db-creds
+          csi:
+            driver: 'secrets-store.csi.k8s.io'
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: 'vault-db-creds'
+      restartPolicy: Always

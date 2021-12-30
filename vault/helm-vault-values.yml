@@ -5,11 +5,13 @@ server:
 
     config: |
       ui = true
+      
       listener "tcp" {
         tls_disable = 1
         address = "[::]:8200"
         cluster_address = "[::]:8201"
       }
+      
       storage "consul" {
         path = "vault"
         address = "HOST_IP:8500"
@@ -18,7 +20,6 @@ server:
       service_registration "kubernetes" {}
 
       plugin_directory = "/home/vault"
+
 csi:
   enabled: true
-
-

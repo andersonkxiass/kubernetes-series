@@ -27,7 +27,6 @@ kubectl -n hashcorp exec vault-0 -c vault -- \
         username="postgres" \
         password="pgpass123"'
 
-
 kubectl -n hashcorp cp ./postgres-app-policy.hcl vault-0:/home/vault/postgres-app-policy.hcl
 
 kubectl -n hashcorp exec vault-0 -c vault -- \
@@ -37,9 +36,7 @@ kubectl -n hashcorp exec vault-0 -c vault -- \
 kubectl -n hashcorp exec vault-0 -c vault -- \
   sh -c ' \
     vault write auth/kubernetes/role/sql-role \
-        bound_service_account_names=postgres-vault \
-        bound_service_account_namespaces="default" \
+        bound_service_account_names=vault-sample \
+        bound_service_account_namespaces="*" \
         policies=postgres-app-policy \
         ttl=1h'
-
-kubectl create sa postgres-vault

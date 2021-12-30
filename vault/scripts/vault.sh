@@ -1,16 +1,18 @@
 #!/bin/bash
 
-echo "Configure Vault"
+kubectl create ns hashcorp
 
 helm install -n hashcorp consul hashicorp/consul --values helm-consul-values.yml
+
 kubectl rollout -n hashcorp status daemonset/consul-consul
 
 helm install -n hashcorp vault hashicorp/vault --values helm-vault-values.yml
+
 kubectl rollout -n hashcorp status deploy/vault-agent-injector
 kubectl rollout -n hashcorp status daemonset/vault-csi-provider
 
-helm install -n hashcorp csi secrets-store-csi-driver/secrets-store-csi-driver --set syncSecret.enabled=true \
---set enableSecretRotation=true --set rotationPollInterval="10m"
+helm install -n hashcorp csi secrets-store-csi-driver/secrets-store-csi-driver \
+  --values secrets-store-csi-driver-values.yaml
 
 kubectl -n hashcorp rollout status daemonset/csi-secrets-store-csi-driver
 
