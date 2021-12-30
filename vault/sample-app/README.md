@@ -24,14 +24,9 @@ kind load docker-image ghcr.io/andersonkxiass/simple-fastapi:development
 ```bash
 helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
 helm repo update
-helm install csi secrets-store-csi-driver/secrets-store-csi-driver --set syncSecret.enabled=true \
---set enableSecretRotation=true
-```
 
-- Add Secret Provider Class
-
-```bash
-kubectl apply -f postgres-secret-provider-class.yaml
+helm install -n hashcorp csi secrets-store-csi-driver/secrets-store-csi-driver \
+  --values secrets-store-csi-driver-values.yaml
 ```
 
 - Helm install reloader
@@ -50,7 +45,7 @@ kubectl apply -f sample-app/postgres-secret-provider-class.yaml
 kubectl apply -f sample-app/sample-api.yaml
 ```
 
-- Check if is there an env called DB_USERNAME
+- Check if is there an env called `DB_USERNAME`
 
 ```bash
 export APP_POD=$(kubectl get pod -l app=app -o jsonpath="{.items[*].metadata.name}")

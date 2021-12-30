@@ -9,16 +9,16 @@ spec:
   selector:
     matchLabels:
       app: app
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: "50%"
+#  strategy:
+#    type: RollingUpdate
+#    rollingUpdate:
+#      maxUnavailable: "50%"
   template:
     metadata:
       labels:
         app: app
-      annotations:
-        secret.reloader.stakater.com/reload: "minio-secrets,db-secrets"
+#      annotations:
+#        secret.reloader.stakater.com/reload: "minio-secrets,db-secrets"
     spec:
       serviceAccountName: vault-sample
       containers:
@@ -72,3 +72,16 @@ spec:
             volumeAttributes:
               secretProviderClass: 'vault-db-creds'
       restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: app
+  type: NodePort
+  ports:
+    - port: 8000
+      name: app
